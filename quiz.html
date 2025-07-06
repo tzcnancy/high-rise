@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>答题 - 高层建筑知识自测</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e1e4e8;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .progress {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        .question-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .question-text {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        
+        .options {
+            margin-bottom: 25px;
+        }
+        
+        .option {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .option:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .option.selected {
+            border-color: #165DFF;
+            background-color: #eef2ff;
+        }
+        
+        .option input {
+            margin-right: 15px;
+            width: 18px;
+            height: 18px;
+        }
+        
+        .feedback {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .feedback.correct {
+            background-color: #f0fff4;
+            border: 1px solid #c3e6c3;
+            color: #28a745;
+            display: block;
+        }
+        
+        .feedback.incorrect {
+            background-color: #fff5f5;
+            border: 1px solid #ffe3e3;
+            color: #dc3545;
+            display: block;
+        }
+        
+        .explanation {
+            margin-top: 10px;
+            font-size: 14px;
+            padding-top: 10px;
+            border-top: 1px dashed #e1e4e8;
+        }
+        
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        
+        .primary-btn {
+            background-color: #165DFF;
+            color: white;
+        }
+        
+        .primary-btn:hover {
+            background-color: #0d47a1;
+        }
+        
+        .secondary-btn {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .secondary-btn:hover {
+            background-color: #5a6268;
+        }
+        
+        .error-message {
+            color: #dc3545;
+            text-align: center;
+            padding: 20px;
+            background-color: #f8d7da;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 id="section-title">加载中...</h1>
+            <div class="progress" id="question-progress">题目 1/5</div>
+        </header>
+        
+        <div id="error-container" style="display: none;" class="error-message"></div>
+        
+        <div class="question-card">
+            <div class="question-text" id="question-text">加载题目中...</div>
+            
+            <div class="options" id="options-container">
+                <!-- 选项将通过JavaScript动态生成 -->
+            </div>
+            
+            <div class="feedback" id="feedback">
+                <div class="feedback-text" id="feedback-text"></div>
+                <div class="explanation" id="explanation-text"></div>
+            </div>
+            
+            <div class="button-group">
+                <button class="secondary-btn" id="back-btn">返回版块</button>
+                <div>
+                    <button class="primary-btn" id="submit-btn">提交答案</button>
+                    <button class="primary-btn" id="next-btn" style="display: none;">下一题</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 存储全局状态
+        let appState = {
+            currentSection: null,
+            currentQuestionIndex: 0,
+            questionsData: null,
+            userAnswers: []
+        };
+
+        // 显示错误信息
+        function showError(message) {
+            const errorContainer = document.getElementById('error-container');
+            errorContainer.textContent = message;
+            errorContainer.style.display = 'block';
+            console.error('错误:', message);
+        }
+
+        // 从URL获取版块ID
+        function getSectionIdFromUrl() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const sectionId = params.get('section');
+                return sectionId ? parseInt(sectionId) : null;
+            } catch (error) {
+                showError('无法解析URL参数: ' + error.message);
+                return null;
+            }
+        }
+
+        // 加载题目数据
+        function loadQuestionsData() {
+            // 直接嵌入完整题目数据
+            return {
+                sections: [
+                    {
+                        id: 1,
+                        name: "建筑设计原则",
+                        questions: [
+                            {
+                                id: 101,
+                                text: "高层建筑设计中，垂直交通组织的首要考虑因素是？",
+                                options: ["电梯数量", "疏散效率", "空间布局", "造价控制"],
+                                correctAnswer: 1,
+                                explanation: "垂直交通组织的首要考虑因素是疏散效率，需确保在紧急情况下人员能够快速安全撤离，符合建筑设计防火规范要求。"
+                            },
+                            {
+                                id: 102,
+                                text: "高层建筑形态设计中，下列哪项不是主要考虑因素？",
+                                options: ["城市天际线", "建筑功能", "结构计算复杂度", "自然采光通风"],
+                                correctAnswer: 2,
+                                explanation: "高层建筑形态设计主要考虑城市天际线、建筑功能和自然采光通风等因素，结构计算复杂度属于工程技术范畴。"
+                            },
+                            {
+                                id: 103,
+                                text: "高层建筑人性化设计不包括以下哪项？",
+                                options: ["公共空间设计", "观景平台设置", "电梯等候时间控制", "结构安全冗余"],
+                                correctAnswer: 3,
+                                explanation: "结构安全冗余属于结构设计范畴，虽然重要，但不属于人性化设计的内容。人性化设计关注使用者的舒适度和体验。"
+                            },
+                            {
+                                id: 104,
+                                text: "高层建筑与城市文脉的关系处理不包括？",
+                                options: ["呼应城市历史建筑风格", "延续城市街道尺度", "采用当地传统材料", "最大化建筑高度"],
+                                correctAnswer: 3,
+                                explanation: "最大化建筑高度可能与城市文脉不协调，高层建筑与城市文脉的关系处理应注重呼应历史风格、延续街道尺度和采用传统材料等方面。"
+                            },
+                            {
+                                id: 105,
+                                text: "高层建筑标准层平面设计的核心是？",
+                                options: ["造型独特", "结构合理", "功能分区明确", "造价最低"],
+                                correctAnswer: 2,
+                                explanation: "高层建筑标准层平面设计的核心是结构合理性，在此基础上实现功能分区明确和使用效率最大化。"
+                            }
+                        ]
+                    },
+                    {
+                        id: 2,
+                        name: "历史与理论",
+                        questions: [
+                            {
+                                id: 201,
+                                text: "下列哪座建筑被认为是现代高层建筑的开端？",
+                                options: ["埃菲尔铁塔", "芝加哥家庭保险大楼", "帝国大厦", "水晶宫"],
+                                correctAnswer: 1,
+                                explanation: "1885年建成的芝加哥家庭保险大楼被认为是现代高层建筑的开端，它首次使用了钢结构框架，高度达到10层。"
+                            },
+                            {
+                                id: 202,
+                                text: "柯布西耶提出的\"新建筑五点\"不包括以下哪项？",
+                                options: ["底层架空", "自由平面", "横向长窗", "玻璃幕墙"],
+                                correctAnswer: 3,
+                                explanation: "柯布西耶的\"新建筑五点\"包括：底层架空、屋顶花园、自由平面、横向长窗和自由立面。玻璃幕墙是后来发展的技术。"
+                            },
+                            {
+                                id: 203,
+                                text: "后现代主义高层建筑设计的主要特征是？",
+                                options: ["简洁几何形态", "装饰性元素回归", "纯功能主义", "玻璃幕墙广泛应用"],
+                                correctAnswer: 1,
+                                explanation: "后现代主义高层建筑设计强调装饰性元素的回归，反对现代主义的纯粹功能主义，常采用历史符号和隐喻手法。"
+                            },
+                            {
+                                id: 204,
+                                text: "弗兰克·劳埃德·赖特设计的哪座建筑体现了\"有机建筑\"理论？",
+                                options: ["古根海姆博物馆", "流水别墅", "约翰逊蜡烛公司总部", "马林县市政中心"],
+                                correctAnswer: 0,
+                                explanation: "古根海姆博物馆虽然不是典型的高层建筑，但其螺旋形设计体现了赖特\"有机建筑\"理论，即建筑应与自然和人类需求协调一致。"
+                            },
+                            {
+                                id: 205,
+                                text: "20世纪70年代能源危机后，高层建筑设计开始注重？",
+                                options: ["高度竞赛", "节能设计", "造型独特", "钢结构应用"],
+                                correctAnswer: 1,
+                                explanation: "20世纪70年代能源危机使建筑界意识到能源效率的重要性，高层建筑设计开始注重节能措施，如双层幕墙、遮阳系统等。"
+                            }
+                        ]
+                    },
+                    {
+                        id: 3,
+                        name: "法规与规范",
+                        questions: [
+                            {
+                                id: 301,
+                                text: "我国《建筑设计防火规范》中，高层建筑的耐火等级不应低于？",
+                                options: ["一级", "二级", "三级", "四级"],
+                                correctAnswer: 1,
+                                explanation: "根据我国《建筑设计防火规范》GB50016，高层建筑的耐火等级不应低于二级，一类高层建筑的耐火等级应为一级。"
+                            },
+                            {
+                                id: 302,
+                                text: "高层建筑每个防火分区的最大允许建筑面积，当设置自动灭火系统时可增加？",
+                                options: ["20%", "50%", "100%", "200%"],
+                                correctAnswer: 1,
+                                explanation: "根据防火规范，高层建筑每个防火分区的最大允许建筑面积为1500㎡，当设置自动灭火系统时可增加50%，即达到2250㎡。"
+                            },
+                            {
+                                id: 303,
+                                text: "下列哪项不是高层建筑疏散楼梯的设置要求？",
+                                options: ["防烟楼梯间", "封闭楼梯间", "剪刀楼梯间", "敞开楼梯间"],
+                                correctAnswer: 3,
+                                explanation: "高层建筑疏散楼梯应采用防烟楼梯间或封闭楼梯间，某些情况下可采用剪刀楼梯间，但严禁采用敞开楼梯间，以确保疏散安全。"
+                            },
+                            {
+                                id: 304,
+                                text: "高层建筑中，消防电梯的载重量不应小于？",
+                                options: ["600kg", "800kg", "1000kg", "1200kg"],
+                                correctAnswer: 1,
+                                explanation: "根据防火规范，高层建筑消防电梯的载重量不应小于800kg，行驶速度应按从首层到顶层的运行时间不超过60s计算确定。"
+                            },
+                            {
+                                id: 305,
+                                text: "我国规范规定，建筑高度超过多少米的住宅建筑为超高层建筑？",
+                                options: ["50m", "80m", "100m", "150m"],
+                                correctAnswer: 2,
+                                explanation: "根据我国《民用建筑设计统一标准》GB50352，建筑高度大于100m的民用建筑为超高层建筑，包括住宅和公共建筑。"
+                            }
+                        ]
+                    },
+                    {
+                        id: 4,
+                        name: "城市规划与环境",
+                        questions: [
+                            {
+                                id: 401,
+                                text: "高层建筑在城市天际线设计中的主要作用是？",
+                                options: ["地标标识", "最大化开发强度", "遮挡不利景观", "降低建筑密度"],
+                                correctAnswer: 0,
+                                explanation: "高层建筑在城市天际线设计中的主要作用是作为地标标识，形成城市轮廓的视觉焦点，增强城市识别性。"
+                            },
+                            {
+                                id: 402,
+                                text: "高层建筑群布局中，下列哪项不是主要考虑因素？",
+                                options: ["日照间距", "通风廊道", "建筑高度一致", "视线通廊"],
+                                correctAnswer: 2,
+                                explanation: "高层建筑群布局应考虑日照间距、通风廊道和视线通廊等因素，建筑高度不必一致，适当变化可形成丰富的城市空间。"
+                            },
+                            {
+                                id: 403,
+                                text: "高层建筑对城市微气候的影响不包括？",
+                                options: ["热岛效应", "风环境改变", "降水增加", "阴影影响"],
+                                correctAnswer: 2,
+                                explanation: "高层建筑会影响城市热岛效应、风环境和日照阴影，但不会直接导致降水增加，降水主要受大气候条件影响。"
+                            },
+                            {
+                                id: 404,
+                                text: "城市中心区高层建筑布局宜采用？",
+                                options: ["集中式布局", "分散式布局", "行列式布局", "围合式布局"],
+                                correctAnswer: 0,
+                                explanation: "城市中心区高层建筑宜采用集中式布局，形成城市核心区，提高土地利用效率，便于公共设施共享和交通组织。"
+                            },
+                            {
+                                id: 405,
+                                text: "高层建筑与城市交通整合的重点是？",
+                                options: ["增加停车位", "与公共交通衔接", "拓宽周边道路", "设置专用车道"],
+                                correctAnswer: 1,
+                                explanation: "高层建筑与城市交通整合的重点是与公共交通系统（如地铁、公交）的无缝衔接，鼓励绿色出行，而非单纯增加停车位。"
+                            }
+                        ]
+                    },
+                    {
+                        id: 5,
+                        name: "绿色与可持续设计",
+                        questions: [
+                            {
+                                id: 501,
+                                text: "下列哪项不属于高层建筑节能设计的被动式措施？",
+                                options: ["优化建筑朝向", "双层中空玻璃", "太阳能光伏板", "自然通风设计"],
+                                correctAnswer: 2,
+                                explanation: "太阳能光伏板属于主动式节能措施，需要机械和电气系统支持。其他选项均为被动式措施，利用自然条件减少能源消耗。"
+                            },
+                            {
+                                id: 502,
+                                text: "高层建筑垂直绿化的主要作用不包括？",
+                                options: ["降低建筑能耗", "增加建筑自重", "改善空气质量", "减少热岛效应"],
+                                correctAnswer: 1,
+                                explanation: "垂直绿化可以降低建筑能耗、改善空气质量和减少热岛效应，虽然会增加少量建筑自重，但这不是其主要作用。"
+                            },
+                            {
+                                id: 503,
+                                text: "绿色建筑评价体系中，\"节地与室外环境\"指标不包括？",
+                                options: ["容积率控制", "绿地率", "建筑密度", "可再生能源利用"],
+                                correctAnswer: 3,
+                                explanation: "可再生能源利用属于\"节能与能源利用\"指标，而非\"节地与室外环境\"指标。节地指标主要关注土地利用效率和室外环境质量。"
+                            },
+                            {
+                                id: 504,
+                                text: "高层建筑雨水回收系统的主要用途是？",
+                                options: ["饮用水", "景观用水", "消防用水", "生活用水"],
+                                correctAnswer: 1,
+                                explanation: "高层建筑雨水回收系统收集的雨水主要用于景观灌溉、道路清扫和冲厕等非饮用水用途，一般不用于饮用水和消防用水。"
+                            },
+                            {
+                                id: 505,
+                                text: "下列哪种材料不属于绿色建材？",
+                                options: ["再生骨料混凝土", "竹材", "不可降解塑料", "低VOC涂料"],
+                                correctAnswer: 2,
+                                explanation: "不可降解塑料在使用和废弃过程中会对环境造成负面影响，不属于绿色建材。其他选项均为环保、可再生或低污染材料。"
+                            }
+                        ]
+                    },
+                    {
+                        id: 6,
+                        name: "功能与空间设计",
+                        questions: [
+                            {
+                                id: 601,
+                                text: "高层建筑功能分区的基本原则是？",
+                                options: ["按高度分区", "按使用频率分区", "按功能性质分区", "按防火等级分区"],
+                                correctAnswer: 2,
+                                explanation: "高层建筑功能分区的基本原则是按功能性质分区，将相同或相近功能的空间集中布置，提高使用效率，便于管理和服务。"
+                            },
+                            {
+                                id: 602,
+                                text: "高层建筑标准层平面设计中，核心筒的主要功能是？",
+                                options: ["结构支撑", "垂直交通和设备管线", "办公空间", "公共活动空间"],
+                                correctAnswer: 1,
+                                explanation: "高层建筑核心筒的主要功能是容纳垂直交通（电梯、楼梯）和设备管线（给排水、暖通空调等），同时也起到结构支撑作用。"
+                            },
+                            {
+                                id: 603,
+                                text: "下列哪项不是高层建筑入口大厅的设计要点？",
+                                options: ["空间导向性", "视觉焦点", "安全检查", "交通组织"],
+                                correctAnswer: 2,
+                                explanation: "安全检查虽然在某些建筑中存在，但不是入口大厅的设计要点。入口大厅的设计要点包括空间导向性、视觉焦点和交通组织等。"
+                            },
+                            {
+                                id: 604,
+                                text: "高层建筑中，共享空间的主要作用是？",
+                                options: ["提高容积率", "创造社交场所", "增加建筑面积", "降低结构成本"],
+                                correctAnswer: 1,
+                                explanation: "高层建筑中的共享空间（如中庭、空中花园等）主要作用是创造社交互动场所，改善室内环境质量，提升建筑品质和用户体验。"
+                            },
+                            {
+                                id: 605,
+                                text: "高层建筑功能复合化指的是？",
+                                options: ["单一功能最大化", "多种功能垂直整合", "仅设置商业功能", "居住功能为主"],
+                                correctAnswer: 1,
+                                explanation: "高层建筑功能复合化指的是将多种功能（如商业、办公、居住、酒店等）在同一建筑中垂直整合，形成多功能综合体。"
+                            }
+                        ]
+                    }
+                ]
+            };
+        }
+
+        // 加载当前版块
+        function loadCurrentSection() {
+            const sectionId = getSectionIdFromUrl();
+            if (!sectionId) {
+                showError('未指定学习版块，请返回首页选择');
+                return false;
+            }
+            
+            // 加载题目数据
+            appState.questionsData = loadQuestionsData();
+            
+            // 查找当前版块
+            appState.currentSection = appState.questionsData.sections.find(
+                section => section.id === sectionId
+            );
+            
+            if (!appState.currentSection) {
+                showError(`未找到ID为 ${sectionId} 的版块`);
+                return false;
+            }
+            
+            // 更新页面标题
+            document.getElementById('section-title').textContent = appState.currentSection.name;
+            
+            return true;
+        }
+
+        // 渲染题目
+        function renderQuestion(index) {
+            appState.currentQuestionIndex = index;
+            const question = appState.currentSection.questions[index];
+            
+            // 更新进度显示
+            document.getElementById('question-progress').textContent = 
+                `题目 ${index + 1}/${appState.currentSection.questions.length}`;
+            
+            // 更新题目内容
+            document.getElementById('question-text').textContent = question.text;
+            
+            // 渲染选项
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+            
+            question.options.forEach((option, i) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option';
+                optionDiv.innerHTML = `
+                    <input type="radio" name="question-option" value="${i}" id="option-${i}">
+                    <label for="option-${i}">${String.fromCharCode(65 + i)}. ${option}</label>
+                `;
+                
+                // 选项点击事件
+                optionDiv.addEventListener('click', function() {
+                    // 清除其他选项的选中状态
+                    document.querySelectorAll('.option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    // 设置当前选项为选中
+                    this.classList.add('selected');
+                    document.getElementById(`option-${i}`).checked = true;
+                });
+                
+                optionsContainer.appendChild(optionDiv);
+            });
+            
+            // 重置反馈和按钮状态
+            document.getElementById('feedback').style.display = 'none';
+            document.getElementById('submit-btn').style.display = 'inline-block';
+            document.getElementById('next-btn').style.display = 'none';
+        }
+
+        // 提交答案
+        function submitAnswer() {
+            const selectedOption = document.querySelector('input[name="question-option"]:checked');
+            if (!selectedOption) {
+                alert('请选择一个答案');
+                return;
+            }
+            
+            const userAnswer = parseInt(selectedOption.value);
+            const question = appState.currentSection.questions[appState.currentQuestionIndex];
+            const isCorrect = userAnswer === question.correctAnswer;
+            
+            // 保存答案
+            appState.userAnswers.push({
+                questionId: question.id,
+                userAnswer: userAnswer,
+                isCorrect: isCorrect
+            });
+            
+            // 显示反馈
+            const feedback = document.getElementById('feedback');
+            const feedbackText = document.getElementById('feedback-text');
+            const explanationText = document.getElementById('explanation-text');
+            
+            feedbackText.textContent = isCorrect ? 
+                `正确！表现不错！` : 
+                `不正确，正确答案是 ${String.fromCharCode(65 + question.correctAnswer)}。`;
+            
+            explanationText.textContent = question.explanation;
+            feedback.className = `feedback ${isCorrect ? 'correct' : 'incorrect'}`;
+            
+            // 显示反馈和下一题按钮
+            feedback.style.display = 'block';
+            document.getElementById('submit-btn').style.display = 'none';
+            
+            // 如果是最后一题，显示完成按钮
+            if (appState.currentQuestionIndex === appState.currentSection.questions.length - 1) {
+                document.getElementById('next-btn').textContent = '完成练习';
+            }
+            
+            document.getElementById('next-btn').style.display = 'inline-block';
+        }
+
+        // 下一题
+        function nextQuestion() {
+            if (appState.currentQuestionIndex < appState.currentSection.questions.length - 1) {
+                // 加载下一题
+                renderQuestion(appState.currentQuestionIndex + 1);
+            } else {
+                // 完成所有题目，更新完成状态
+                try {
+                    const completedSections = JSON.parse(localStorage.getItem('completedSections') || '[]');
+                    if (!completedSections.includes(appState.currentSection.id)) {
+                        completedSections.push(appState.currentSection.id);
+                        localStorage.setItem('completedSections', JSON.stringify(completedSections));
+                    }
+                } catch (error) {
+                    console.error('更新完成状态失败:', error);
+                }
+                
+                // 计算正确率
+                const correctCount = appState.userAnswers.filter(a => a.isCorrect).length;
+                const accuracy = (correctCount / appState.userAnswers.length) * 100;
+                
+                alert(`练习完成！\n共 ${appState.userAnswers.length} 题，答对 ${correctCount} 题，正确率 ${accuracy.toFixed(1)}%。`);
+                window.location.href = 'index.html';
+            }
+        }
+
+        // 绑定事件
+        function bindEvents() {
+            // 提交按钮
+            document.getElementById('submit-btn').addEventListener('click', submitAnswer);
+            
+            // 下一题按钮
+            document.getElementById('next-btn').addEventListener('click', nextQuestion);
+            
+            // 返回按钮
+            document.getElementById('back-btn').addEventListener('click', function() {
+                if (confirm('确定要返回版块选择吗？当前答题进度将不被保存。')) {
+                    window.location.href = 'index.html';
+                }
+            });
+        }
+
+        // 初始化页面
+        function init() {
+            try {
+                // 加载当前版块
+                const sectionLoaded = loadCurrentSection();
+                if (!sectionLoaded) return;
+                
+                // 绑定事件
+                bindEvents();
+                
+                // 加载第一题
+                renderQuestion(0);
+            } catch (error) {
+                showError('页面初始化失败: ' + error.message);
+            }
+        }
+
+        // 页面加载完成后初始化
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

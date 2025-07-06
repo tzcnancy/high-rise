@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>高层建筑知识自测</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            margin: 20px 0 40px;
+            color: #2c3e50;
+        }
+        
+        .sections-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        
+        .section-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 25px 15px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            border: 1px solid #e1e4e8;
+        }
+        
+        .section-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .section-card.completed {
+            opacity: 0.7;
+            filter: grayscale(100%);
+        }
+        
+        .section-card.completed::after {
+            content: "✓ 已完成";
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #6c757d;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        
+        .section-card h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .section-card p {
+            font-size: 14px;
+            color: #6c757d;
+        }
+        
+        .error-message {
+            color: #dc3545;
+            text-align: center;
+            padding: 20px;
+            background-color: #f8d7da;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .sections-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>高层建筑知识自测</h1>
+        
+        <div id="error-container" style="display: none;" class="error-message"></div>
+        
+        <div class="sections-grid" id="sections-container">
+            <!-- 版块卡片将通过JavaScript动态生成 -->
+            <div class="section-card">
+                <h2>加载中...</h2>
+                <p>请稍候</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 存储全局状态
+        let appState = {
+            questionsData: null,
+            completedSections: []
+        };
+
+        // 显示错误信息
+        function showError(message) {
+            const errorContainer = document.getElementById('error-container');
+            errorContainer.textContent = message;
+            errorContainer.style.display = 'block';
+            console.error('错误:', message);
+        }
+
+        // 获取已完成的版块
+        function loadCompletedSections() {
+            try {
+                const stored = localStorage.getItem('completedSections');
+                return stored ? JSON.parse(stored) : [];
+            } catch (error) {
+                showError('无法加载学习进度: ' + error.message);
+                return [];
+            }
+        }
+
+        // 加载题目数据
+        function loadQuestionsData() {
+            // 直接嵌入基础题目数据
+            const embeddedData = {
+                sections: [
+                    {id: 1, name: "建筑设计原则", questions: Array(5).fill({})},
+                    {id: 2, name: "历史与理论", questions: Array(5).fill({})},
+                    {id: 3, name: "法规与规范", questions: Array(5).fill({})},
+                    {id: 4, name: "城市规划与环境", questions: Array(5).fill({})},
+                    {id: 5, name: "绿色与可持续设计", questions: Array(5).fill({})},
+                    {id: 6, name: "功能与空间设计", questions: Array(5).fill({})}
+                ]
+            };
+            
+            appState.questionsData = embeddedData;
+            renderSections();
+        }
+
+        // 渲染版块卡片
+        function renderSections() {
+            const container = document.getElementById('sections-container');
+            container.innerHTML = '';
+            
+            if (!appState.questionsData || !appState.questionsData.sections) {
+                showError('无法加载版块数据，请刷新页面重试');
+                return;
+            }
+            
+            appState.questionsData.sections.forEach(section => {
+                const isCompleted = appState.completedSections.includes(section.id);
+                const card = document.createElement('div');
+                card.className = `section-card ${isCompleted ? 'completed' : ''}`;
+                card.innerHTML = `
+                    <h2>${section.name}</h2>
+                    <p>共 ${section.questions ? section.questions.length : 0} 题</p>
+                `;
+                
+                // 绑定点击事件
+                card.onclick = function() {
+                    console.log('点击版块:', section.id, section.name);
+                    window.location.href = 'quiz.html?section=' + encodeURIComponent(section.id);
+                };
+                
+                container.appendChild(card);
+            });
+        }
+
+        // 初始化页面
+        function init() {
+            try {
+                appState.completedSections = loadCompletedSections();
+                loadQuestionsData();
+            } catch (error) {
+                showError('页面初始化失败: ' + error.message);
+            }
+        }
+
+        // 页面加载完成后初始化
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
